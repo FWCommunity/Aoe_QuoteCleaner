@@ -1,2 +1,2 @@
-app/etc/modules/*							app/etc/modules/
-app/code/community/Aoe/QuoteCleaner		app/code/community/Aoe/QuoteCleaner
+app/etc/modules/Aoe_QuoteCleaner.xml
+app/code/community/Aoe/QuoteCleaner
