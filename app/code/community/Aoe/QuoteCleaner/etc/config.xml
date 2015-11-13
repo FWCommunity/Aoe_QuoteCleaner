@@ -36,9 +36,9 @@
 				<scheduler_cron_expr>25 * * * *</scheduler_cron_expr>
 				<clean_quoter_older_than>60</clean_quoter_older_than>
 				<clean_anonymous_quotes_older_than>30</clean_anonymous_quotes_older_than>
+				<min_quote_age_safeguard>7</min_quote_age_safeguard>
 				<limit>10000</limit>
 			</quotecleaner>
 		</system>
 	</default>
-
 </config>

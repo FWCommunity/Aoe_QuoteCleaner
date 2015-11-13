@@ -22,7 +22,7 @@
 						</scheduler_cron_expr>
 						<clean_quoter_older_than>
 							<label>Clean customer quotes older than</label>
-							<comment>In days. (Minimum number of days is 7)</comment>
+							<comment>In days. (Minimum number of days set in config XML (default/system/quotecleaner/min_quote_age_safeguard))</comment>
 							<frontend_type>text</frontend_type>
 							<sort_order>20</sort_order>
 							<show_in_default>1</show_in_default>
@@ -31,7 +31,7 @@
 						</clean_quoter_older_than>
 						<clean_anonymous_quotes_older_than>
 							<label>Clean anonymous quotes older than</label>
-							<comment>In days. (Minimum number of days is 7)</comment>
+							<comment>In days. (Minimum number of days set in config XML (default/system/quotecleaner/min_quote_age_safeguard))</comment>
 							<frontend_type>text</frontend_type>
 							<sort_order>30</sort_order>
 							<show_in_default>1</show_in_default>
