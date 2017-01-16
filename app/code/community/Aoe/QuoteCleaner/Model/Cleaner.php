@@ -6,7 +6,6 @@
  * @category Model
  * @package  Aoe_QuoteCleaner
  * @author   AOE Magento Team <team-magento@aoe.com>
- * @license  none none
  * @link     www.aoe.com
  */
 class Aoe_QuoteCleaner_Model_Cleaner
@@ -15,7 +14,7 @@ class Aoe_QuoteCleaner_Model_Cleaner
      * Clean old quote entries.
      * This method will be called via a Magento crontab task.
      *
-     * @return void
+     * @return array
      */
     public function clean()
     {
@@ -36,35 +35,48 @@ class Aoe_QuoteCleaner_Model_Cleaner
         $tableName = Mage::getSingleton('core/resource')->getTableName('sales/quote');
         $tableName = $writeConnection->quoteIdentifier($tableName, true);
 
-        // customer quotes
-        $olderThan = intval(Mage::getStoreConfig('system/quotecleaner/clean_quoter_older_than'));
-        $olderThan = max($olderThan, $minQuoteAgeSafeguard);
+        $customerConditions = [
+            'customer' => '(NOT ISNULL(customer_id) AND customer_id != 0)',
+            'anonymous' => '(ISNULL(customer_id) OR customer_id = 0)'
+        ];
+        $itemsConditions = [
+            'anyNumberOfItems' => '',
+            'noItems' => 'items_qty = 0'
+        ];
+        $configurationPaths = [
+            'customer_anyNumberOfItems' =>  'system/quotecleaner/clean_quoter_older_than',
+            'customer_noItems' =>           'system/quotecleaner/clean_quotes_without_items_older_than',
+            'anonymous_anyNumberOfItems' => 'system/quotecleaner/clean_anonymous_quotes_older_than',
+            'anonymous_noItems' =>          'system/quotecleaner/clean_anonymous_quotes_without_items_older_than'
+        ];
 
-        $startTime = time();
-        $sql = sprintf(
-            'DELETE FROM %s WHERE (NOT ISNULL(customer_id) AND customer_id != 0) AND updated_at < DATE_SUB(Now(), INTERVAL %s DAY) LIMIT %s',
-            $tableName,
-            $olderThan,
-            $limit
-        );
-        $stmt = $writeConnection->query($sql);
-        $report['customer']['count'] = $stmt->rowCount();
-        $report['customer']['duration'] = time() - $startTime;
-        Mage::log('[QUOTECLEANER] Cleaning old customer quotes (duration: ' . $report['customer']['duration'] . ', row count: ' . $report['customer']['count'] . ')');
+        foreach ($customerConditions as $customerConditionKey => $customerCondition) {
+            foreach ($itemsConditions as $itemsConditionKey => $itemsCondition) {
+                $key = $customerConditionKey.'_'.$itemsConditionKey;
+                $configurationPath = $configurationPaths[$key];
+                $olderThan = intval(Mage::getStoreConfig($configurationPath));
+                if (empty($olderThan)) {
+                    continue;
+                }
+                $olderThan = max($olderThan, $minQuoteAgeSafeguard);
 
-        // anonymous quotes$startTime = time();
-        $olderThan = intval(Mage::getStoreConfig('system/quotecleaner/clean_anonymous_quotes_older_than'));
-        $olderThan = max($olderThan, $minQuoteAgeSafeguard);
+                $conditions = [
+                    'updated_at < DATE_SUB(Now(), INTERVAL '.$olderThan.' DAY)',
+                    $customerCondition
+                ];
+                if ($itemsCondition) {
+                    $conditions[] = $itemsCondition;
+                }
 
-        $sql = sprintf(
-            'DELETE FROM %s WHERE (ISNULL(customer_id) OR customer_id = 0) AND updated_at < DATE_SUB(Now(), INTERVAL %s DAY) LIMIT %s',
-            $tableName,
-            $olderThan,
-            $limit
-        );
-        $stmt = $writeConnection->query($sql);
-        $report['anonymous']['count'] = $stmt->rowCount();
-        $report['anonymous']['duration'] = time() - $startTime;
-        Mage::log('[QUOTECLEANER] Cleaning old anonymous quotes (duration: ' . $report['anonymous']['duration'] . ', row count: ' . $report['anonymous']['count'] . ')');
+                $startTime = time();
+                $sql = 'DELETE FROM ' . $tableName . ' WHERE ' . implode(' AND ', $conditions) . ' LIMIT ' . $limit;
+                $stmt = $writeConnection->query($sql);
+                $report[$key]['count'] = $stmt->rowCount();
+                $report[$key]['duration'] = time() - $startTime;
+                Mage::log('[QUOTECLEANER] Cleaning quotes (mode: '.$key.', duration: ' . $report[$key]['duration'] . ', row count: ' . $report[$key]['count'] . ')');
+            }
+        }
+
+        return $report;
     }
 }
