@@ -69,7 +69,7 @@ class Aoe_QuoteCleaner_Model_Cleaner
                 }
 
                 $startTime = time();
-                $sql = 'DELETE FROM ' . $tableName . ' WHERE ' . implode(' AND ', $conditions) . ' LIMIT ' . $limit;
+                $sql = 'DELETE FROM ' . $tableName . ' WHERE ' . implode(' AND ', $conditions) . 'AND entity_id NOT IN (SELECT quote_id FROM sales_flat_order) LIMIT ' . $limit;
                 $stmt = $writeConnection->query($sql);
                 $report[$key]['count'] = $stmt->rowCount();
                 $report[$key]['duration'] = time() - $startTime;
