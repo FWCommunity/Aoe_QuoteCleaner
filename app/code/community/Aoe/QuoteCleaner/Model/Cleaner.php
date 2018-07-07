@@ -36,8 +36,8 @@ class Aoe_QuoteCleaner_Model_Cleaner
         $tableName = $writeConnection->quoteIdentifier($tableName, true);
 
         $customerConditions = [
-            'customer' => '(NOT ISNULL(customer_id) AND customer_id != 0)',
-            'anonymous' => '(ISNULL(customer_id) OR customer_id = 0)'
+            'customer' => '(NOT ISNULL(sfq.customer_id) AND sfq.customer_id != 0)',
+            'anonymous' => '(ISNULL(sfq.customer_id) OR sfq.customer_id = 0)'
         ];
         $itemsConditions = [
             'anyNumberOfItems' => '',
@@ -61,7 +61,7 @@ class Aoe_QuoteCleaner_Model_Cleaner
                 $olderThan = max($olderThan, $minQuoteAgeSafeguard);
 
                 $conditions = [
-                    'updated_at < DATE_SUB(Now(), INTERVAL '.$olderThan.' DAY)',
+                    'sfq.updated_at < DATE_SUB(Now(), INTERVAL '.$olderThan.' DAY)',
                     $customerCondition
                 ];
                 if ($itemsCondition) {
@@ -69,7 +69,7 @@ class Aoe_QuoteCleaner_Model_Cleaner
                 }
 
                 $startTime = time();
-                $sql = 'DELETE FROM ' . $tableName . ' WHERE ' . implode(' AND ', $conditions) . ' AND entity_id NOT IN (SELECT quote_id FROM sales_flat_order) LIMIT ' . $limit;
+		$sql = 'DELETE sfq.* FROM sales_flat_quote sfq LEFT OUTER JOIN sales_flat_order sfo ON sfq.entity_id = sfo.quote_id WHERE '. implode(' AND ', $conditions) . ' and sfo.quote_id IS NULL';
                 $stmt = $writeConnection->query($sql);
                 $report[$key]['count'] = $stmt->rowCount();
                 $report[$key]['duration'] = time() - $startTime;
